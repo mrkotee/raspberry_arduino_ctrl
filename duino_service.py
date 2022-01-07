@@ -3,11 +3,13 @@ import time
 from threading import Thread
 from serial_control.serial_class import DuinoSerial
 from serial_control.read_script import check_duino_json, update_duino_json
-from settings import port, json_temp_file_path, logfile_path, save_result_timeout, command_environ_name
+from communication_sockets.socket_server import threaded_server
+from settings import port, json_temp_file_path, logfile_path, save_result_timeout, socket_port, socket_host
 
 
 command = None
 result_dict = {}
+socket_data = b''
 
 
 def communicate_with_serial(duino_serial):
@@ -28,13 +30,17 @@ def communicate_with_serial(duino_serial):
 def main():
     global command
     global result_dict
+    global socket_data
     duino_serial = DuinoSerial(port)
 
     command = None
-    read_timer = time.monotonic()
+    read_timer = time.monotonic() + save_result_timeout
 
     communicate_thread = Thread(target=communicate_with_serial, args=(duino_serial,), daemon=True)
     communicate_thread.start()
+
+    socket_server_thread = Thread(target=threaded_server, args=(socket_host, socket_port), daemon=True)
+    socket_server_thread.start()
 
     while True:
 
@@ -45,8 +51,9 @@ def main():
 
             read_timer = time.monotonic() + save_result_timeout
 
-        if os.environ.get(command_environ_name):
-            command = os.environ.get(command_environ_name)
+        if socket_data:
+            command = socket_data
+            socket_data = b""
 
         time.sleep(0.3)
 
