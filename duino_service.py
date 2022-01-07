@@ -33,7 +33,7 @@ def main():
     command = None
     read_timer = time.monotonic()
 
-    communicate_thread = Thread(target=communicate_with_serial, args=(duino_serial,))
+    communicate_thread = Thread(target=communicate_with_serial, args=(duino_serial,), daemon=True)
     communicate_thread.start()
 
     while True:
@@ -53,3 +53,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

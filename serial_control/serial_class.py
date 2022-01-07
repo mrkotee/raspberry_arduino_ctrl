@@ -63,7 +63,7 @@ class DuinoSerial:
         :return:
         """
 
-        if not isinstance(bytes, command):
+        if not isinstance(command, bytes):
             command = command.encode()
         while self.read() != 'send':
             self.connect.write(command)
