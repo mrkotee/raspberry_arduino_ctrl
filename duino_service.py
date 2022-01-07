@@ -1,15 +1,35 @@
 import os
 import time
+import socket
 from threading import Thread
 from serial_control.serial_class import DuinoSerial
 from serial_control.read_script import check_duino_json, update_duino_json
-from communication_sockets.socket_server import threaded_server
+# from communication_sockets.socket_server import threaded_server
 from settings import port, json_temp_file_path, logfile_path, save_result_timeout, socket_port, socket_host
 
 
 command = None
 result_dict = {}
-socket_data = b''
+socket_data = b""
+
+
+def threaded_server(host, port):
+    global socket_data
+
+    sock = socket.socket()
+
+    sock.bind((host, port))
+    sock.listen(1)
+
+    while True:
+        conn, addr = sock.accept()
+        if conn:
+            data = conn.recv(1024)
+            if data:
+                socket_data = data
+                conn.send(b'ok')
+            conn.close()
+        time.sleep(0.3)
 
 
 def communicate_with_serial(duino_serial):

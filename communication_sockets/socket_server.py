@@ -2,6 +2,7 @@ import asyncio
 import socket
 import time
 
+
 socket_data = b""
 
 
@@ -19,7 +20,7 @@ def threaded_server(host, port):
             data = conn.recv(1024)
             if data:
                 socket_data = data
-            conn.send(b'ok')
+                conn.send(b'ok')
             conn.close()
         time.sleep(0.3)
 
@@ -59,6 +60,6 @@ if __name__ == "__main__":
 
     while True:
         if socket_data:
-            print(f'{socket_data=}')
+            print(f'socket_data={socket_data}')
             socket_data = ""
         time.sleep(0.5)
