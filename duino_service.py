@@ -1,8 +1,9 @@
+import os
 import time
 from threading import Thread
 from serial_control.serial_class import DuinoSerial
 from serial_control.read_script import check_duino_json, update_duino_json
-from settings import port, json_temp_file_path, logfile_path, save_result_timeout
+from settings import port, json_temp_file_path, logfile_path, save_result_timeout, command_environ_name
 
 
 command = None
@@ -43,6 +44,11 @@ def main():
             result_dict = {}
 
             read_timer = time.monotonic() + save_result_timeout
+
+        if os.environ[command_environ_name]:
+            command = os.environ[command_environ_name]
+
+        time.sleep(0.3)
 
 
 if __name__ == "__main__":
