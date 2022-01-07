@@ -5,6 +5,7 @@ import serial
 
 
 class DuinoSerial:
+
     def __init__(self, port):
         try:
             self.connect = serial.Serial(port, 9600, timeout=0.3)
@@ -19,12 +20,23 @@ class DuinoSerial:
         else:
             return None
 
-    def read_json(self, wait_time=60):
+    def read_line_json(self):
+        line = self.read()
+        if line:
+            try:
+                data = json.loads(line)
+                return data
+            except json.decoder.JSONDecodeError:
+                print(line)
+        return None
+
+    def read_full_json(self, wait_time=60, duino_dict_len=1):
         """
 
-        :param wait_time:
+        :param wait_time: time for waiting full dict
+        :param duino_dict_len: len of dict is waiting for
         :return: dict
-        example: {
+        example return: {
             {"temp in": 24.47}
             {"humidity": 13.00}
             {"temp dht": 26.40}
@@ -34,15 +46,13 @@ class DuinoSerial:
         result_dict = {}
         timer_prev = time.time()
         timer = 0
-        while timer < wait_time and len(result_dict) < 5:
+        while timer < wait_time and len(result_dict) < duino_dict_len:
             time.sleep(0.1)
-            line = self.read()
-            if line:
-                try:
-                    data = json.loads(line)
-                    result_dict.update(data)
-                except json.decoder.JSONDecodeError:
-                    print(line)
+
+            data = self.read_line_json()
+            if data:
+                result_dict.update(data)
+
             timer = time.time() - timer_prev
         return result_dict
 
