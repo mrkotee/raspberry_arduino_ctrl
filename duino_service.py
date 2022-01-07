@@ -37,7 +37,7 @@ def main():
 
     while True:
 
-        if read_timer > time.monotonic():  # save dict to json
+        if read_timer < time.monotonic():  # save dict to json
             result_dict = check_duino_json(result_dict)
             update_duino_json(result_dict, json_temp_file_path, logfile_path)
             result_dict = {}

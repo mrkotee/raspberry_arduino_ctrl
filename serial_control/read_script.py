@@ -15,7 +15,10 @@ def check_duino_json(duino_dict):
 
 
 def update_duino_json(duino_json, json_filepath, logfile_path=None):
-    temp_dict = json.load(open(json_filepath))
+    try:
+        temp_dict = json.load(open(json_filepath))
+    except FileNotFoundError:
+        temp_dict = {}
 
     if logfile_path:
         with open(logfile_path, 'a') as f:
