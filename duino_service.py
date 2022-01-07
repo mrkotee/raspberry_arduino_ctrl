@@ -45,8 +45,8 @@ def main():
 
             read_timer = time.monotonic() + save_result_timeout
 
-        if os.environ[command_environ_name]:
-            command = os.environ[command_environ_name]
+        if os.environ.get(command_environ_name):
+            command = os.environ.get(command_environ_name)
 
         time.sleep(0.3)
 
