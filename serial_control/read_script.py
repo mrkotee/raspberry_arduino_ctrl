@@ -9,8 +9,8 @@ def check_duino_json(duino_dict):
     if 'relay work' not in duino_dict:
         duino_dict['relay work'] = 0
 
-    if 'temp out' not in duino_dict:
-        duino_dict['temp out'] = None
+    # if 'temp out' not in duino_dict:
+    #     duino_dict['temp out'] = None
     return duino_dict
 
 
