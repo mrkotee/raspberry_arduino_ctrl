@@ -2,11 +2,14 @@ import os
 import time
 import socket
 from threading import Thread
+import logging
 from serial_control.serial_class import DuinoSerial
 from serial_control.read_script import check_duino_json, update_duino_json
 # from communication_sockets.socket_server import threaded_server
-from settings import port, json_temp_file_path, logfile_path, save_result_timeout, socket_port, socket_host
+from settings import port, json_temp_file_path, logfile_path, logging_level, save_result_timeout, socket_port, socket_host
 
+logging.basicConfig(filename=logfile_path, level=logging_level,
+                    format='%(asctime)s -  %(levelname)s: %(message)s')
 
 command = None
 result_dict = {}
@@ -28,6 +31,7 @@ def threaded_server(host, port):
             if data:
                 socket_data = data
                 conn.send(b'ok')
+                logging.info(f'receive command: {socket_data}')
             conn.close()
         time.sleep(0.3)
 
@@ -44,6 +48,7 @@ def communicate_with_serial(duino_serial):
         json_line = duino_serial.read_line_json()
         if json_line:
             result_dict.update(json_line)
+            logging.debug(f'{json_line}')
         time.sleep(0.3)
 
 
@@ -66,7 +71,8 @@ def main():
 
         if read_timer < time.monotonic():  # save dict to json
             result_dict = check_duino_json(result_dict)
-            update_duino_json(result_dict, json_temp_file_path, logfile_path)
+            update_duino_json(result_dict, json_temp_file_path)
+            logging.info(f'{result_dict}')
             result_dict = {}
 
             read_timer = time.monotonic() + save_result_timeout

@@ -1,3 +1,4 @@
+import logging
 
 port = ""
 logfile_path = ""
@@ -9,3 +10,5 @@ arduino_dict_len = 5
 
 socket_host = "localhost"
 socket_port = 55555
+
+logging_level = logging.DEBUG
