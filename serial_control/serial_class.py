@@ -67,7 +67,7 @@ class DuinoSerial:
             command = command.encode()
         send_timer = time.time()
         while self.read() != 'send':
-            if send_timer > time.time():
+            if send_timer < time.time():
                 self.connect.write(command)
                 send_timer = time.time() + 1
 
