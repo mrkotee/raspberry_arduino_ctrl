@@ -2,6 +2,7 @@ import socket
 
 
 def send_message(host, port, message):  # possible extension - ConnectionRefusedError
+    """Send message to socket commander service"""
     if not isinstance(message, bytes):
         message = message.encode()
     connection = socket.socket()

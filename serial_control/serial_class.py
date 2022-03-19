@@ -65,9 +65,11 @@ class DuinoSerial:
 
         if not isinstance(command, bytes):
             command = command.encode()
+        send_timer = time.time()
         while self.read() != 'send':
-            self.connect.write(command)
-            time.sleep(1)
+            if send_timer > time.time():
+                self.connect.write(command)
+                send_timer = time.time() + 1
 
     def _switch(self, cmd, opt):
         if opt:
@@ -81,4 +83,3 @@ class DuinoSerial:
 
     def switch_relay(self, option=True):
         self._switch(b'relay', option)
-

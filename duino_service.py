@@ -52,6 +52,7 @@ def communicate_with_serial(duino_serial):
         time.sleep(0.3)
 
 
+# TODO rewrite all on async
 def main():
     global command
     global result_dict
