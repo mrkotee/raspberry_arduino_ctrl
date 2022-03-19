@@ -1,6 +1,7 @@
 
 import time
 import json
+import logging
 import serial
 
 
@@ -16,6 +17,7 @@ class DuinoSerial:
     def read(self):
         if self.connect.in_waiting > 0:
             line = self.connect.readline().decode('utf-8').rstrip()
+            logging.debug(line)
             return line
         else:
             return None
