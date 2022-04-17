@@ -1,89 +1,68 @@
-import os
+import asyncio
 import time
-import socket
-from threading import Thread
 import logging
 from serial_control.serial_class import DuinoSerial
 from serial_control.read_script import check_duino_json, update_duino_json
-# from communication_sockets.socket_server import threaded_server
 from settings import port, json_temp_file_path, logfile_path, logging_level, save_result_timeout, socket_port, socket_host
 
 logging.basicConfig(filename=logfile_path, level=logging_level,
                     format='%(asctime)s -  %(levelname)s: %(message)s')
 
-command = None
-result_dict = {}
-socket_data = b""
 
+class DuinoService:
+    def __init__(self, serial_port, socket_host, socket_port):
+        self.command = None
+        self.result_dict = {}
+        self.socket_data = b""
+        self.socket_host = socket_host
+        self.socket_port = socket_port
+        self.duino_serial = DuinoSerial(serial_port)
 
-def threaded_server(host, port):
-    global socket_data
+    async def get_socket_messages(self, reader, writer):
+        while True:
+            socket_data = await reader.read(128)
+            if not socket_data:
+                break
+            self.socket_data = socket_data
+            writer.write(b"ok")
+            await writer.drain()
+            logging.info(f'receive command: {self.socket_data}')
+            await asyncio.sleep(0.3)
+        writer.close()
 
-    sock = socket.socket()
+    async def serial_communicate(self):
+        while True:
+            if self.command:
+                self.duino_serial.send_command(self.command)
+                self.command = None
+            json_line = self.duino_serial.read_line_json()
+            if json_line:
+                self.result_dict.update(json_line)
+                logging.debug(f'{json_line}')
+            await asyncio.sleep(0.3)
 
-    sock.bind((host, port))
-    sock.listen(1)
+    async def handler(self):
+        logging.debug("start handler")
+        serial_read_timer = time.monotonic() + save_result_timeout
+        asyncio.create_task(self.serial_communicate())
+        logging.debug("start serial")
+        await asyncio.start_server(self.get_socket_messages, self.socket_host, self.socket_port)
+        logging.debug("start server")
+        while True:
+            if serial_read_timer < time.monotonic():  # save dict to json
+                self.result_dict = check_duino_json(self.result_dict)
+                update_duino_json(self.result_dict, json_temp_file_path)
+                logging.info(f'{self.result_dict}')
+                self.result_dict = {}
+                serial_read_timer = time.monotonic() + save_result_timeout
 
-    while True:
-        conn, addr = sock.accept()
-        if conn:
-            data = conn.recv(1024)
-            if data:
-                socket_data = data
-                conn.send(b'ok')
-                logging.info(f'receive command: {socket_data}')
-            conn.close()
-        time.sleep(0.3)
-
-
-def communicate_with_serial(duino_serial):
-    global command
-    global result_dict
-
-    while True:
-        if command:
-            duino_serial.send_command(command)
-            command = None
-
-        json_line = duino_serial.read_line_json()
-        if json_line:
-            result_dict.update(json_line)
-            logging.debug(f'{json_line}')
-        time.sleep(0.3)
-
-
-# TODO rewrite all on async
-def main():
-    global command
-    global result_dict
-    global socket_data
-    duino_serial = DuinoSerial(port)
-
-    command = None
-    read_timer = time.monotonic() + save_result_timeout
-
-    communicate_thread = Thread(target=communicate_with_serial, args=(duino_serial,), daemon=True)
-    communicate_thread.start()
-
-    socket_server_thread = Thread(target=threaded_server, args=(socket_host, socket_port), daemon=True)
-    socket_server_thread.start()
-
-    while True:
-
-        if read_timer < time.monotonic():  # save dict to json
-            result_dict = check_duino_json(result_dict)
-            update_duino_json(result_dict, json_temp_file_path)
-            logging.info(f'{result_dict}')
-            result_dict = {}
-
-            read_timer = time.monotonic() + save_result_timeout
-
-        if socket_data:
-            command = socket_data
-            socket_data = b""
-
-        time.sleep(0.3)
+            if self.socket_data:
+                self.command = self.socket_data
+                self.socket_data = b""
+            await asyncio.sleep(0.3)
 
 
 if __name__ == "__main__":
-    main()
+    service = DuinoService(port, socket_host, socket_port)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(service.handler())
